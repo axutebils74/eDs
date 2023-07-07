@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>存档分享</title>
+
+  <style>
+    html,
+    body {
+      padding: 0;
+      margin: 0;
+      height: 100%;
+    }
+
+    body {
+      display: flex;
+    }
+
+    #jsoneditor {
+      height: 100%;
+    }
+
+    .x button {
+      padding: 5px;
+      font-size: large;
+    }
+
+    #s {
+      font-size: xx-large;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="jsoneditor" style="--jse-font-size-mono: 20px;width: 100%;overflow-x: scroll;"></div>
+  <div class="x">
+    <button onclick="ck()">查看</button><br>
+    <button onclick="jb()">解包</button><br>
+    <button onclick="db()">打包</button><br>
+    <button onclick="xr()">写入</button><br>
+    <button onclick="file.click()">上传</button><br>
+    <input type="file" multiple id="file" hidden>
+    <button onclick="xz()">下载</button><br>
+    <button onclick="dc()">导出</button><br>
+    <button onclick="fz()">复制</button><br>
+    <button onclick="fx()">分享</button><br>
+    <button onclick="jm()">解码</button><br>
+    <div id="s" hidden>
+    </div>
+  </div>
+  <script src="uzip.js"></script>
+  <script src="index.js"></script>
+  <script src="swal.js"></script>
+  <script src="lz-string.js"></script>
+  <script src="base32768.js"></script>
+  <script src="encrypt.js"></script>
+  <script>
+    isMobile = navigator.userAgent.indexOf("Mobile") != -1
+    if (!isMobile) {
+      s.hidden = "";
+      jsoneditor.style.width = "70%"
+    }
+    ls = localStorage;
+    editor = new JSONEditor({
+      target: jsoneditor,
+      props: {
+        content: { text: JSON.stringify("RPG 存档查看器\n查看：查看当前浏览器存档\n解包：解包RPG存档数据\n打包：重新RPG存档数据封包（只需要一次）\n写入：写入当前浏览器存档\n上传：上传存档\n下载：下载dat文件\n导出：导出存档\n复制：复制到剪贴板上\n分享：生成可分享格式\n解码：对可分享格式解码") }
+      }
+    })
+    function showMessage(str) {
+      if (isMobile) {
+        swal(str);
+      } else {
+        s.innerText = str;
+      }
+    }
+    onerror = function (e) {
+      if (isMobile) {
+        swal("", e, "error");
+      } else {
+        s.innerText = e
+      }
+    }
+    function setObj(a) {
+      editor.set({ text: JSON.stringify(a) })
+    }
+    function ck() {
+      setObj(ls)
+      showMessage("查看成功");
+    }
+    function jb() {
+      var g = JSON.parse(editor.get().text)
+      var ls = {}
+      for (var i in g) {
+        if (i.startsWith("RPG ")) {
+          var k = g[i]
+          ls[i] = JSON.parse(LZString.decompressFromBase64(k));
+        }
+      }
+      setObj(ls)
+      showMessage("解包成功");
+    }
+    function db() {
+      var g = JSON.parse(editor.get().text);
+      var ls = {}
+      for (var i in g) {
+        if (i.startsWith("RPG ")) {
+          var k = g[i]
+          ls[i] = LZString.compressToBase64(JSON.stringify(k));
+        }
+      }
+      setObj(ls)
+      showMessage("打包成功");
+    }
+    function xr() {
+      var g = JSON.parse(editor.get().text);
+      Object.assign(ls, g);
+      showMessage("写入成功");
+    }
+    file.oninput = function () {
+      f = file.files;
+      if (!f.length) return;
+      var ls = {};
+      if (f[0].name.endsWith('.dat')) {
+        var xml = new XMLHttpRequest();
+        var url = URL.createObjectURL(f[0])
+        xml.open("GET", url, false);
+        xml.send();
+        URL.revokeObjectURL(url);
+        editor.set({ text: xml.responseText })
+        showMessage("上传成功");
+        file.value = '';
+        return;
+      }
+      if (f[0].name.endsWith('.zip')) {
+        var xml = new XMLHttpRequest();
+        var url = URL.createObjectURL(f[0])
+        xml.responseType = "arraybuffer";
+        xml.open("GET", url, true);
+        xml.send();
+        xml.onload = function () {
+          URL.revokeObjectURL(url);
+          var ls = UZIP.parse(xml.response);
+          var obj = {}
+          for (n in ls) {
+            if (n == "common.rpgsave") {
+              obj["RPG Config"] = uint8ArrayToUtf8(ls[n]);
+            } else if (n == "global.rpgsave") {
+              obj["RPG Global"] = uint8ArrayToUtf8(ls[n])
+            } else if (/^file\d{1,2}\.rpgsave$/.test(n)) {
+              obj["RPG File".concat(n.match(/\d{1,2}/)[0])] = uint8ArrayToUtf8(ls[n]);
+            }
+          }
+          setObj(obj);
+          showMessage("上传成功");
+        }
+        file.value = '';
+        return;
+      }
+      for (var i = 0; i < f.length; i++) {
+        var n = f[i].name;
+        if (n == "common.rpgsave") {
+          var xml = new XMLHttpRequest();
+          var url = URL.createObjectURL(f[0])
+          xml.open("GET", url, false);
+          xml.send();
+          ls["RPG Config"] = xml.responseText;
+          URL.revokeObjectURL(url);
+        } else if (n == "global.rpgsave") {
+          var xml = new XMLHttpRequest();
+          var url = URL.createObjectURL(f[0])
+          xml.open("GET", url, false);
+          xml.send();
+          ls["RPG Global"] = xml.responseText;
+          URL.revokeObjectURL(url);
+        } else if (/^file\d{1,2}\.rpgsave$/.test(n)) {
+          var xml = new XMLHttpRequest();
+          var url = URL.createObjectURL(f[0])
+          xml.open("GET", url, false);
+          xml.send();
+          ls["RPG File".concat(n.match(/\d{1,2}/)[0])] = xml.responseText;
+          URL.revokeObjectURL(url);
+        }
+      }
+      setObj(ls)
+      showMessage("上传成功");
+    }
+    function xz() {
+      var a = document.createElement('a');
+      var blob = new Blob([editor.get().text]);
+      var url = URL.createObjectURL(new Blob([blob]));
+      a.href = url;
+      a.download = "export.dat";
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    }
+    function fz() {
+      var t = document.createElement('textarea');
+      t.value = editor.get().text;
+      document.body.appendChild(t);
+      t.select();
+      document.execCommand('Copy') && showMessage("已经复制到粘贴板上面了");
+      document.body.removeChild(t);
+    }
+    function encodeStr(str) {
+      return encode(enc().e(str));
+    }
+    function decodeStr(str) {
+      return enc().d(decode(str));
+    }
+    function fx() {
+      var e = encodeStr(editor.get().text)
+      editor.set({ text: '"' + e + '"' })
+      showMessage(e.length + "字");
+    }
+    function jm() {
+      var e = decodeStr(editor.get().text.replace(/"/g, ""))
+      editor.set({ text: e })
+      showMessage(e.length + "字");
+    }
+    function uint8ArrayToUtf8(uint8Array) {
+      var result = "";
+      var i = 0;
+
+      while (i < uint8Array.length) {
+        var value = uint8Array[i++];
+
+        if (value < 0x80) {
+          // 单字节字符
+          result += String.fromCharCode(value);
+        } else if ((value & 0xe0) === 0xc0) {
+          // 双字节字符
+          var secondByte = uint8Array[i++];
+          result += String.fromCharCode(((value & 0x1f) << 6) | (secondByte & 0x3f));
+        } else if ((value & 0xf0) === 0xe0) {
+          // 三字节字符
+          var secondByte = uint8Array[i++];
+          var thirdByte = uint8Array[i++];
+          result += String.fromCharCode(
+            ((value & 0x0f) << 12) | ((secondByte & 0x3f) << 6) | (thirdByte & 0x3f)
+          );
+        } else if ((value & 0xf8) === 0xf0) {
+          // 四字节字符
+          var secondByte = uint8Array[i++];
+          var thirdByte = uint8Array[i++];
+          var fourthByte = uint8Array[i++];
+          var codePoint =
+            ((value & 0x07) << 18) |
+            ((secondByte & 0x3f) << 12) |
+            ((thirdByte & 0x3f) << 6) |
+            (fourthByte & 0x3f);
+          result += String.fromCodePoint(codePoint);
+        } else {
+          // 非法字符
+          throw new Error("Invalid UTF-8 sequence");
+        }
+      }
+
+      return result;
+    }
+    function toUint8Array(str) {
+      var result = [];
+      for (var i = 0; i < str.length; i++) {
+        var code = str.charCodeAt(i);
+        if (code < 0x80) {
+          result.push(code);
+        } else if (code < 0x800) {
+          result.push(0xc0 | (code >> 6));
+          result.push(0x80 | (code & 0x3f));
+        } else if (code < 0xd800 || code >= 0xe000) {
+          result.push(0xe0 | (code >> 12));
+          result.push(0x80 | ((code >> 6) & 0x3f));
+          result.push(0x80 | (code & 0x3f));
+        } else {
+          i++;
+          code = 0x10000 + (((code & 0x3ff) << 10) | (str.charCodeAt(i) & 0x3ff));
+          result.push(0xf0 | (code >> 18));
+          result.push(0x80 | ((code >> 12) & 0x3f));
+          result.push(0x80 | ((code >> 6) & 0x3f));
+          result.push(0x80 | (code & 0x3f));
+        }
+      }
+      return new Uint8Array(result);
+    }
+    function dc() {
+      var f = JSON.parse(editor.get().text)
+      var ls = {}
+      for (var n in f) {
+        var e = f[n];
+        if (n == "RPG Config") {
+          ls["common.rpgsave"] = toUint8Array(e);
+        } else if (n == "RPG Global") {
+          ls["global.rpgsave"] = toUint8Array(e);
+        } else if (/^RPG File\d{1,2}$/.test(n)) {
+          ls["file".concat(n.match(/\d{1,2}/)[0], ".rpgsave")] = toUint8Array(e);
+        }
+      }
+      var a = document.createElement('a');
+      var blob = new Blob([awvaw = UZIP.encode(ls)]);
+      var url = URL.createObjectURL(new Blob([blob]));
+      a.href = url;
+      a.download = "export.zip";
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      showMessage("导出成功");
+    }
+  </script>
+</body>
+
+</html>
