@@ -58,6 +58,9 @@
   <script src="encrypt.js"></script>
   <script>
     isMobile = navigator.userAgent.indexOf("Mobile") != -1
+    function isStr(str){
+      return typeof str == "string"
+    }
     if (!isMobile) {
       s.hidden = "";
       jsoneditor.style.width = "70%"
@@ -108,7 +111,7 @@
       for (var i in g) {
         if (i.startsWith("RPG ")) {
           var k = g[i]
-          ls[i] = LZString.compressToBase64(JSON.stringify(k));
+          ls[i] =isStr(k)? k : LZString.compressToBase64(JSON.stringify(k));
         }
       }
       setObj(ls)
@@ -116,6 +119,11 @@
     }
     function xr() {
       var g = JSON.parse(editor.get().text);
+      for (var i in g) {
+        if (i.startsWith("RPG ")) {
+          g[i] =isStr(g[i])? g[i] : LZString.compressToBase64(JSON.stringify(g[i]));
+        }
+      }
       Object.assign(ls, g);
       showMessage("写入成功");
     }
@@ -146,9 +154,11 @@
           var obj = {}
           for (n in ls) {
             if (n == "common.rpgsave") {
-              obj["RPG Config"] = uint8ArrayToUtf8(ls[n]);
+              obj["RPG Common"] = uint8ArrayToUtf8(ls[n]);
             } else if (n == "global.rpgsave") {
               obj["RPG Global"] = uint8ArrayToUtf8(ls[n])
+            } else if (n == "config.rpgsave") {
+              obj["RPG Config"] = uint8ArrayToUtf8(ls[n])
             } else if (/^file\d{1,2}\.rpgsave$/.test(n)) {
               obj["RPG File".concat(n.match(/\d{1,2}/)[0])] = uint8ArrayToUtf8(ls[n]);
             }
@@ -162,6 +172,13 @@
       for (var i = 0; i < f.length; i++) {
         var n = f[i].name;
         if (n == "common.rpgsave") {
+          var xml = new XMLHttpRequest();
+          var url = URL.createObjectURL(f[0])
+          xml.open("GET", url, false);
+          xml.send();
+          ls["RPG Common"] = xml.responseText;
+          URL.revokeObjectURL(url);
+        } else if (n == "config.rpgsave") {
           var xml = new XMLHttpRequest();
           var url = URL.createObjectURL(f[0])
           xml.open("GET", url, false);
@@ -292,10 +309,16 @@
       for (var n in f) {
         var e = f[n];
         if (n == "RPG Config") {
+          e = isStr(e) ? e : LZString.compressToBase64(JSON.stringify(e));
+          ls["config.rpgsave"] = toUint8Array(e);
+        } else if (n == "RPG Common") {
+          e = isStr(e) ? e : LZString.compressToBase64(JSON.stringify(e));
           ls["common.rpgsave"] = toUint8Array(e);
         } else if (n == "RPG Global") {
+          e = isStr(e) ? e : LZString.compressToBase64(JSON.stringify(e));
           ls["global.rpgsave"] = toUint8Array(e);
         } else if (/^RPG File\d{1,2}$/.test(n)) {
+          e = isStr(e) ? e : LZString.compressToBase64(JSON.stringify(e));
           ls["file".concat(n.match(/\d{1,2}/)[0], ".rpgsave")] = toUint8Array(e);
         }
       }
