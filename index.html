@@ -183,28 +183,28 @@
         var n = f[i].name;
         if (n == "common.rpgsave") {
           var xml = new XMLHttpRequest();
-          var url = URL.createObjectURL(f[0])
+          var url = URL.createObjectURL(f[i])
           xml.open("GET", url, false);
           xml.send();
           ls["RPG Common"] = xml.responseText;
           URL.revokeObjectURL(url);
         } else if (n == "config.rpgsave") {
           var xml = new XMLHttpRequest();
-          var url = URL.createObjectURL(f[0])
+          var url = URL.createObjectURL(f[i])
           xml.open("GET", url, false);
           xml.send();
           ls["RPG Config"] = xml.responseText;
           URL.revokeObjectURL(url);
         } else if (n == "global.rpgsave") {
           var xml = new XMLHttpRequest();
-          var url = URL.createObjectURL(f[0])
+          var url = URL.createObjectURL(f[i])
           xml.open("GET", url, false);
           xml.send();
           ls["RPG Global"] = xml.responseText;
           URL.revokeObjectURL(url);
         } else if (/^file\d{1,2}\.rpgsave$/.test(n)) {
           var xml = new XMLHttpRequest();
-          var url = URL.createObjectURL(f[0])
+          var url = URL.createObjectURL(f[i])
           xml.open("GET", url, false);
           xml.send();
           ls["RPG File".concat(n.match(/\d{1,2}/)[0])] = xml.responseText;
