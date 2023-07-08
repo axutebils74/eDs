@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh">
 
 <head>
   <meta charset="utf-8" />
@@ -58,6 +58,15 @@
   <script src="encrypt.js"></script>
   <script>
     isMobile = navigator.userAgent.indexOf("Mobile") != -1
+    function getValue(){
+      var text1 = editor.get();
+      return text1.json || JSON.parse(text1.text);
+    }
+    function getText(){
+      var text2 = editor.get();
+      var t = text2.json || text2.text;
+      return isStr(t) ? t : JSON.stringify(t);
+    }
     function isStr(str){
       return typeof str == "string"
     }
@@ -94,7 +103,7 @@
       showMessage("查看成功");
     }
     function jb() {
-      var g = JSON.parse(editor.get().text)
+      var g = getValue()
       var ls = {}
       for (var i in g) {
         if (i.startsWith("RPG ")) {
@@ -106,7 +115,7 @@
       showMessage("解包成功");
     }
     function db() {
-      var g = JSON.parse(editor.get().text);
+      var g = getValue();
       var ls = {}
       for (var i in g) {
         if (i.startsWith("RPG ")) {
@@ -118,13 +127,14 @@
       showMessage("打包成功");
     }
     function xr() {
-      var g = JSON.parse(editor.get().text);
+      var g = getValue();
+      g1 = {}
       for (var i in g) {
         if (i.startsWith("RPG ")) {
-          g[i] =isStr(g[i])? g[i] : LZString.compressToBase64(JSON.stringify(g[i]));
+          g1[i] =isStr(g[i])? g[i] : LZString.compressToBase64(JSON.stringify(g[i]));
         }
       }
-      Object.assign(ls, g);
+      Object.assign(ls, g1);
       showMessage("写入成功");
     }
     file.oninput = function () {
@@ -206,7 +216,7 @@
     }
     function xz() {
       var a = document.createElement('a');
-      var blob = new Blob([editor.get().text]);
+      var blob = new Blob([getText()]);
       var url = URL.createObjectURL(new Blob([blob]));
       a.href = url;
       a.download = "export.dat";
@@ -217,7 +227,7 @@
     }
     function fz() {
       var t = document.createElement('textarea');
-      t.value = editor.get().text;
+      t.value = getText();
       document.body.appendChild(t);
       t.select();
       document.execCommand('Copy') && showMessage("已经复制到粘贴板上面了");
@@ -230,12 +240,12 @@
       return enc().d(decode(str));
     }
     function fx() {
-      var e = encodeStr(editor.get().text)
+      var e = encodeStr(getText())
       editor.set({ text: '"' + e + '"' })
       showMessage(e.length + "字");
     }
     function jm() {
-      var e = decodeStr(editor.get().text.replace(/"/g, ""))
+      var e = decodeStr(getText().replace(/"/g, ""))
       editor.set({ text: e })
       showMessage(e.length + "字");
     }
@@ -304,7 +314,7 @@
       return new Uint8Array(result);
     }
     function dc() {
-      var f = JSON.parse(editor.get().text)
+      var f = getValue()
       var ls = {}
       for (var n in f) {
         var e = f[n];
@@ -323,7 +333,7 @@
         }
       }
       var a = document.createElement('a');
-      var blob = new Blob([awvaw = UZIP.encode(ls)]);
+      var blob = new Blob([UZIP.encode(ls)]);
       var url = URL.createObjectURL(new Blob([blob]));
       a.href = url;
       a.download = "export.zip";
