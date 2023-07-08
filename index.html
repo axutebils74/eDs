@@ -217,7 +217,7 @@
     function xz() {
       var a = document.createElement('a');
       var blob = new Blob([getText()]);
-      var url = URL.createObjectURL(new Blob([blob]));
+      var url = URL.createObjectURL(blob);
       a.href = url;
       a.download = "export.dat";
       document.body.appendChild(a);
@@ -334,7 +334,7 @@
       }
       var a = document.createElement('a');
       var blob = new Blob([UZIP.encode(ls)]);
-      var url = URL.createObjectURL(new Blob([blob]));
+      var url = URL.createObjectURL(blob);
       a.href = url;
       a.download = "export.zip";
       document.body.appendChild(a);
