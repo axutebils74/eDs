@@ -237,7 +237,7 @@
       return encode(enc().e(str));
     }
     function decodeStr(str) {
-      return enc().d(decode(str));
+      return uint8ArrayToUtf8(enc().d(decode(str)));
     }
     function fx() {
       var e = encodeStr(getText())
