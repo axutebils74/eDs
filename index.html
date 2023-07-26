@@ -234,7 +234,7 @@
       document.body.removeChild(t);
     }
     function encodeStr(str) {
-      return encode(enc().e(str));
+      return encode(enc().e(toUint8Array(str)));
     }
     function decodeStr(str) {
       return uint8ArrayToUtf8(enc().d(decode(str)));
