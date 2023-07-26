@@ -12,3 +12,5 @@
 [https://github.com/t4t5/sweetalert](https://github.com/t4t5/sweetalert)
 ### JSONEditor
 [https://github.com/josdejong/svelte-jsoneditor](https://github.com/josdejong/svelte-jsoneditor)
+### Cheerp 3.0
+[https://leaningtech.com/cheerp/](https://leaningtech.com/cheerp/)
